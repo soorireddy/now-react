@@ -32,10 +32,16 @@ declare global {
                     'x_845458_react/____insertStyle': {
                         table: 'sys_ux_lib_asset'
                         id: '480ce7fc222a4c3599bbe03583817c58'
+                        deleted: true
                     }
                     'x_845458_react/____insertStyle.js.map': {
                         table: 'sys_ux_lib_asset'
                         id: '8a47f5d4c0b94070927872c03fb36753'
+                        deleted: true
+                    }
+                    'x_845458_react/Dashboard': {
+                        table: 'sys_ux_lib_asset'
+                        id: 'a29f074bfeff459f89dd5774bbe47ce0'
                     }
                     'x_845458_react/dashboard-main': {
                         table: 'sys_ux_lib_asset'
@@ -44,6 +50,10 @@ declare global {
                     'x_845458_react/dashboard-main.js.map': {
                         table: 'sys_ux_lib_asset'
                         id: '3b89be6b720c4e2189c9771a3b52d8e9'
+                    }
+                    'x_845458_react/Dashboard.js.map': {
+                        table: 'sys_ux_lib_asset'
+                        id: 'e5c003c8e5e74e23b29788863c1cefb3'
                     }
                     'x_845458_react/main': {
                         table: 'sys_ux_lib_asset'

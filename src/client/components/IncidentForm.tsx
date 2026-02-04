@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import './IncidentForm.css'
 
-export default function IncidentForm({ incident, onSubmit, onCancel }) {
+interface IncidentFormProps {
+    incident?: any
+    onSubmit: (formData: any) => void
+    onCancel: () => void
+    loading?: boolean
+}
+
+export default function IncidentForm({ incident, onSubmit, onCancel, loading = false }: IncidentFormProps) {
     const isEditing = !!incident
 
     // Initialize form state
@@ -34,7 +41,7 @@ export default function IncidentForm({ incident, onSubmit, onCancel }) {
         }
     }, [incident])
 
-    const handleChange = (e) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target
         setFormData((prev) => ({
             ...prev,
@@ -42,20 +49,16 @@ export default function IncidentForm({ incident, onSubmit, onCancel }) {
         }))
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        onSubmit(formData)
+        if (!loading) {
+            onSubmit(formData)
+        }
     }
 
     return (
-        <div className="form-overlay">
-            <div className="form-container">
-                <div className="form-header">
-                    <h2>{isEditing ? `Edit ${incident.number.display_value}` : 'Create New Incident'}</h2>
-                    <button type="button" className="close-button" onClick={onCancel}>
-                        ×
-                    </button>
-                </div>
+        <div className="form-page-container">
+            <div className="form-content">
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
                         <label htmlFor="short_description">Short Description *</label>
@@ -67,6 +70,7 @@ export default function IncidentForm({ incident, onSubmit, onCancel }) {
                             onChange={handleChange}
                             required
                             maxLength={160}
+                            disabled={loading}
                         />
                     </div>
 
@@ -79,13 +83,20 @@ export default function IncidentForm({ incident, onSubmit, onCancel }) {
                             onChange={handleChange}
                             rows={5}
                             maxLength={4000}
+                            disabled={loading}
                         />
                     </div>
 
                     <div className="form-row">
                         <div className="form-group">
                             <label htmlFor="state">State</label>
-                            <select id="state" name="state" value={formData.state} onChange={handleChange}>
+                            <select 
+                                id="state" 
+                                name="state" 
+                                value={formData.state} 
+                                onChange={handleChange}
+                                disabled={loading}
+                            >
                                 <option value="1">New</option>
                                 <option value="2">In Progress</option>
                                 <option value="3">On Hold</option>
@@ -96,7 +107,13 @@ export default function IncidentForm({ incident, onSubmit, onCancel }) {
 
                         <div className="form-group">
                             <label htmlFor="impact">Impact</label>
-                            <select id="impact" name="impact" value={formData.impact} onChange={handleChange}>
+                            <select 
+                                id="impact" 
+                                name="impact" 
+                                value={formData.impact} 
+                                onChange={handleChange}
+                                disabled={loading}
+                            >
                                 <option value="1">1 - High</option>
                                 <option value="2">2 - Medium</option>
                                 <option value="3">3 - Low</option>
@@ -105,11 +122,11 @@ export default function IncidentForm({ incident, onSubmit, onCancel }) {
                     </div>
 
                     <div className="form-actions">
-                        <button type="button" className="cancel-button" onClick={onCancel}>
+                        <button type="button" className="cancel-button" onClick={onCancel} disabled={loading}>
                             Cancel
                         </button>
-                        <button type="submit" className="submit-button">
-                            {isEditing ? 'Update' : 'Create'}
+                        <button type="submit" className="submit-button" disabled={loading}>
+                            {loading ? 'Saving...' : isEditing ? 'Update' : 'Create'}
                         </button>
                     </div>
                 </form>

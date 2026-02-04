@@ -8,8 +8,8 @@ declare global {
 export class IncidentService {
     private readonly tableName: string
 
-    constructor() {
-        this.tableName = 'incident'
+    constructor(tableName: string = 'incident') {
+        this.tableName = tableName
     }
 
     // Return all incidents
@@ -42,7 +42,7 @@ export class IncidentService {
     }
 
     // Get a single incident by sys_id
-    async get(sysId) {
+    async get(sysId: string) {
         try {
             const searchParams = new URLSearchParams()
             searchParams.set('sysparm_display_value', 'all')
@@ -69,7 +69,7 @@ export class IncidentService {
     }
 
     // Create a new incident
-    async create(data) {
+    async create(data: any) {
         try {
             const response = await fetch(`/api/now/table/${this.tableName}`, {
                 method: 'POST',
@@ -97,7 +97,7 @@ export class IncidentService {
     }
 
     // Update an incident
-    async update(sysId, data) {
+    async update(sysId: string, data: any) {
         try {
             const response = await fetch(`/api/now/table/${this.tableName}/${sysId}`, {
                 method: 'PATCH',
@@ -122,7 +122,7 @@ export class IncidentService {
     }
 
     // Delete an incident
-    async delete(sysId) {
+    async delete(sysId: string) {
         try {
             const response = await fetch(`/api/now/table/${this.tableName}/${sysId}`, {
                 method: 'DELETE',
