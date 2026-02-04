@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 // Declare GlideAjax on window object
 declare global {
@@ -11,20 +11,26 @@ interface ServiceNowOOBComponentsProps {
   table?: string;
   sysId?: string;
   mode?: 'form' | 'list' | 'both';
+  view?: string;
 }
 
 const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({ 
   table = 'incident', 
   sysId = '',
-  mode = 'both' 
+  mode = 'both',
+  view = 'default'
 }) => {
   const formRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
+    setLoading(true);
+    setError('');
     // Initialize ServiceNow OOB components when the component mounts
     initializeServiceNowComponents();
-  }, [table, sysId, mode]);
+  }, [table, sysId, mode, view]);
 
   const initializeServiceNowComponents = () => {
     // Initialize OOB Form View
@@ -41,16 +47,20 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
   const initializeFormView = () => {
     if (!formRef.current) return;
 
-    // Create ServiceNow form using GlideForm
+    // Create ServiceNow form container
     const formHtml = `
       <div id="sn-form-container">
-        <form id="form_${table}" class="sn-form" method="post" action="">
+        <div class="sn-form-header">
+          <h2>${table.charAt(0).toUpperCase() + table.slice(1)} Form</h2>
+          <div class="form-info">
+            <small>View: ${view} | ${sysId ? 'Edit Mode' : 'Create Mode'}</small>
+          </div>
+        </div>
+        <div class="sn-form-loading">Loading form fields...</div>
+        <form id="form_${table}" class="sn-form" method="post" action="" style="display:none;">
           <input type="hidden" name="sysparm_form" value="${table}">
           <input type="hidden" name="sys_id" value="${sysId}">
-          <div class="sn-form-header">
-            <h2>${table.charAt(0).toUpperCase() + table.slice(1)} Form</h2>
-          </div>
-          <div id="form_fields_${table}"></div>
+          <div id="form_sections_${table}"></div>
           <div class="sn-form-actions">
             <button type="button" id="btn-submit" class="btn btn-primary" onclick="submitForm()">
               ${sysId ? 'Update' : 'Submit'}
@@ -72,7 +82,7 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
   const initializeListView = () => {
     if (!listRef.current) return;
 
-    // Create ServiceNow list using GlideList
+    // Create ServiceNow list container
     const listHtml = `
       <div id="sn-list-container">
         <div class="sn-list-header">
@@ -86,7 +96,8 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
             </button>
           </div>
         </div>
-        <div id="list_${table}" class="sn-list-table-container">
+        <div class="sn-list-loading">Loading list data...</div>
+        <div id="list_${table}" class="sn-list-table-container" style="display:none;">
           <table class="sn-list-table">
             <thead id="list-header-${table}"></thead>
             <tbody id="list-body-${table}"></tbody>
@@ -105,6 +116,7 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
     // Check if GlideAjax is available, if not use fallback
     if (typeof window.GlideAjax === 'undefined') {
       console.warn('GlideAjax not available, using fallback form');
+      hideLoading('form');
       renderBasicForm();
       return;
     }
@@ -113,15 +125,24 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
     const ajax = new window.GlideAjax('TableUtils');
     ajax.addParam('sysparm_name', 'getFormFields');
     ajax.addParam('sysparm_table', table);
+    ajax.addParam('sysparm_view', view);
     ajax.addParam('sysparm_sys_id', sysId);
     ajax.getXMLAnswer((response: string) => {
       try {
         const formData = JSON.parse(response);
-        renderFormFields(formData);
+        if (formData.error) {
+          console.error('Server error:', formData.error);
+          setError(formData.error);
+          renderBasicForm();
+        } else {
+          renderDynamicForm(formData);
+        }
       } catch (e) {
         console.error('Error parsing form data:', e);
         renderBasicForm();
       }
+      hideLoading('form');
+      setLoading(false);
     });
   };
 
@@ -129,6 +150,7 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
     // Check if GlideAjax is available, if not use fallback
     if (typeof window.GlideAjax === 'undefined') {
       console.warn('GlideAjax not available, using fallback list');
+      hideLoading('list');
       renderBasicList();
       return;
     }
@@ -137,79 +159,130 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
     const ajax = new window.GlideAjax('TableUtils');
     ajax.addParam('sysparm_name', 'getListData');
     ajax.addParam('sysparm_table', table);
+    ajax.addParam('sysparm_view', view);
     ajax.addParam('sysparm_limit', '25');
     ajax.getXMLAnswer((response: string) => {
       try {
         const listData = JSON.parse(response);
-        renderListData(listData);
+        if (listData.error) {
+          console.error('Server error:', listData.error);
+          setError(listData.error);
+          renderBasicList();
+        } else {
+          renderDynamicList(listData);
+        }
       } catch (e) {
         console.error('Error parsing list data:', e);
         renderBasicList();
       }
+      hideLoading('list');
+      setLoading(false);
     });
   };
 
-  const renderFormFields = (formData: any) => {
-    const container = document.getElementById(`form_fields_${table}`);
-    if (!container || !formData.fields) return;
-
-    let fieldsHtml = '';
-    formData.fields.forEach((field: any) => {
-      fieldsHtml += `
-        <div class="sn-form-field">
-          <label for="${field.name}" class="sn-field-label">
-            ${field.label}${field.mandatory ? ' *' : ''}
-          </label>
-          ${renderFieldInput(field)}
-        </div>
-      `;
-    });
+  const hideLoading = (type: 'form' | 'list') => {
+    const loadingEl = document.querySelector(`.sn-${type}-loading`) as HTMLElement;
+    const contentEl = document.querySelector(`#${type === 'form' ? 'form_' + table : 'list_' + table}`) as HTMLElement;
     
-    container.innerHTML = fieldsHtml;
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (contentEl) contentEl.style.display = 'block';
   };
 
-  const renderFieldInput = (field: any) => {
-    const value = field.value || '';
-    const disabled = field.readonly ? 'disabled' : '';
+  const renderDynamicForm = (formData: any) => {
+    const container = document.getElementById(`form_sections_${table}`);
+    if (!container || !formData.layout || !formData.layout.sections) return;
+
+    let sectionsHtml = '';
     
-    switch (field.type) {
+    // Render each section
+    formData.layout.sections.forEach((section: any) => {
+      if (section.fields && section.fields.length > 0) {
+        sectionsHtml += `
+          <div class="sn-form-section">
+            ${section.caption ? `<h3 class="sn-section-header">${section.caption}</h3>` : ''}
+            <div class="sn-section-fields">
+        `;
+        
+        section.fields.forEach((field: any) => {
+          if (field.type === 'field' && field.element) {
+            const currentValue = formData.values[field.element] || field.default_value || '';
+            sectionsHtml += `
+              <div class="sn-form-field ${field.mandatory ? 'mandatory' : ''}">
+                <label for="${field.element}" class="sn-field-label">
+                  ${field.label}${field.mandatory ? ' *' : ''}
+                </label>
+                ${renderFieldInput(field, currentValue)}
+              </div>
+            `;
+          }
+        });
+        
+        sectionsHtml += `
+            </div>
+          </div>
+        `;
+      }
+    });
+    
+    container.innerHTML = sectionsHtml;
+  };
+
+  const renderFieldInput = (field: any, value: string = '') => {
+    const disabled = field.read_only ? 'disabled' : '';
+    const required = field.mandatory ? 'required' : '';
+    
+    switch (field.internal_type) {
       case 'choice':
         let options = '<option value="">-- None --</option>';
         field.choices?.forEach((choice: any) => {
           const selected = choice.value === value ? 'selected' : '';
           options += `<option value="${choice.value}" ${selected}>${choice.label}</option>`;
         });
-        return `<select id="${field.name}" name="${field.name}" class="sn-field-input" ${disabled}>${options}</select>`;
+        return `<select id="${field.element}" name="${field.element}" class="sn-field-input" ${disabled} ${required}>${options}</select>`;
       
       case 'reference':
         return `
           <div class="sn-reference-field">
-            <input type="text" id="${field.name}" name="${field.name}" value="${value}" class="sn-field-input" ${disabled} />
-            <button type="button" class="btn btn-sm btn-secondary" onclick="openReferenceSelector('${field.name}', '${field.reference_table}')">
+            <input type="text" id="${field.element}" name="${field.element}" value="${value}" class="sn-field-input" ${disabled} ${required} />
+            <button type="button" class="btn btn-sm btn-secondary" onclick="openReferenceSelector('${field.element}', '${field.reference_table}')" ${disabled}>
               ...
             </button>
           </div>
         `;
       
+      case 'glide_date':
       case 'date':
-        return `<input type="date" id="${field.name}" name="${field.name}" value="${value}" class="sn-field-input" ${disabled} />`;
+        return `<input type="date" id="${field.element}" name="${field.element}" value="${value}" class="sn-field-input" ${disabled} ${required} />`;
       
+      case 'glide_date_time':
       case 'datetime':
-        return `<input type="datetime-local" id="${field.name}" name="${field.name}" value="${value}" class="sn-field-input" ${disabled} />`;
+        return `<input type="datetime-local" id="${field.element}" name="${field.element}" value="${value}" class="sn-field-input" ${disabled} ${required} />`;
       
       case 'boolean':
-        const checked = value === 'true' ? 'checked' : '';
-        return `<input type="checkbox" id="${field.name}" name="${field.name}" ${checked} class="sn-field-input" ${disabled} />`;
+        const checked = value === 'true' || value === '1' ? 'checked' : '';
+        return `<input type="checkbox" id="${field.element}" name="${field.element}" ${checked} class="sn-field-input" ${disabled} />`;
       
-      case 'textarea':
-        return `<textarea id="${field.name}" name="${field.name}" class="sn-field-input" ${disabled}>${value}</textarea>`;
+      case 'html':
+      case 'journal':
+      case 'journal_input':
+        return `<textarea id="${field.element}" name="${field.element}" class="sn-field-input sn-textarea" ${disabled} ${required}>${value}</textarea>`;
+      
+      case 'integer':
+      case 'decimal':
+        return `<input type="number" id="${field.element}" name="${field.element}" value="${value}" class="sn-field-input" ${disabled} ${required} ${field.max_length ? 'max="' + field.max_length + '"' : ''} />`;
+      
+      case 'email':
+        return `<input type="email" id="${field.element}" name="${field.element}" value="${value}" class="sn-field-input" ${disabled} ${required} />`;
+      
+      case 'url':
+        return `<input type="url" id="${field.element}" name="${field.element}" value="${value}" class="sn-field-input" ${disabled} ${required} />`;
       
       default:
-        return `<input type="text" id="${field.name}" name="${field.name}" value="${value}" class="sn-field-input" ${disabled} />`;
+        return `<input type="text" id="${field.element}" name="${field.element}" value="${value}" class="sn-field-input" ${disabled} ${required} ${field.max_length ? 'maxlength="' + field.max_length + '"' : ''} />`;
     }
   };
 
-  const renderListData = (listData: any) => {
+  const renderDynamicList = (listData: any) => {
     const headerContainer = document.getElementById(`list-header-${table}`);
     const bodyContainer = document.getElementById(`list-body-${table}`);
     
@@ -218,7 +291,7 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
     // Render table headers
     let headerHtml = '<tr>';
     listData.columns.forEach((column: any) => {
-      headerHtml += `<th class="sn-list-header">${column.label}</th>`;
+      headerHtml += `<th class="sn-list-header" title="${column.type}">${column.label}</th>`;
     });
     headerHtml += '<th class="sn-list-header">Actions</th></tr>';
     headerContainer.innerHTML = headerHtml;
@@ -229,62 +302,67 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
       bodyHtml += '<tr class="sn-list-row">';
       listData.columns.forEach((column: any) => {
         const value = record[column.name] || '';
-        bodyHtml += `<td class="sn-list-cell">${value}</td>`;
+        bodyHtml += `<td class="sn-list-cell" title="${column.name}">${value}</td>`;
       });
       bodyHtml += `
         <td class="sn-list-cell">
-          <button type="button" class="btn btn-sm btn-primary" onclick="editRecord('${record.sys_id}')">
+          <button type="button" class="btn btn-sm btn-primary" onclick="editRecord('${record.sys_id}')" title="Edit Record">
             Edit
           </button>
-          <button type="button" class="btn btn-sm btn-danger" onclick="deleteRecord('${record.sys_id}')">
+          <button type="button" class="btn btn-sm btn-danger" onclick="deleteRecord('${record.sys_id}')" title="Delete Record">
             Delete
           </button>
         </td>
       </tr>`;
     });
+    
+    if (listData.records.length === 0) {
+      bodyHtml = `<tr><td colspan="${listData.columns.length + 1}" class="text-center">No records found</td></tr>`;
+    }
+    
     bodyContainer.innerHTML = bodyHtml;
   };
 
   const renderBasicForm = () => {
-    // Fallback basic form for common incident fields
-    const container = document.getElementById(`form_fields_${table}`);
+    // Fallback basic form for common fields
+    const container = document.getElementById(`form_sections_${table}`);
     if (!container) return;
 
-    const basicFields = table === 'incident' ? `
-      <div class="sn-form-field">
-        <label for="short_description" class="sn-field-label">Short Description *</label>
-        <input type="text" id="short_description" name="short_description" class="sn-field-input" required />
-      </div>
-      <div class="sn-form-field">
-        <label for="description" class="sn-field-label">Description</label>
-        <textarea id="description" name="description" class="sn-field-input"></textarea>
-      </div>
-      <div class="sn-form-field">
-        <label for="priority" class="sn-field-label">Priority</label>
-        <select id="priority" name="priority" class="sn-field-input">
-          <option value="">-- None --</option>
-          <option value="1">1 - Critical</option>
-          <option value="2">2 - High</option>
-          <option value="3">3 - Moderate</option>
-          <option value="4">4 - Low</option>
-          <option value="5">5 - Planning</option>
-        </select>
-      </div>
-      <div class="sn-form-field">
-        <label for="state" class="sn-field-label">State</label>
-        <select id="state" name="state" class="sn-field-input">
-          <option value="">-- None --</option>
-          <option value="1">New</option>
-          <option value="2">In Progress</option>
-          <option value="3">On Hold</option>
-          <option value="6">Resolved</option>
-          <option value="7">Closed</option>
-        </select>
-      </div>
-    ` : `
-      <div class="sn-form-field">
-        <label for="name" class="sn-field-label">Name</label>
-        <input type="text" id="name" name="name" class="sn-field-input" />
+    const basicFields = `
+      <div class="sn-form-section">
+        <h3 class="sn-section-header">Basic Information</h3>
+        <div class="sn-section-fields">
+          <div class="sn-form-field mandatory">
+            <label for="short_description" class="sn-field-label">Short Description *</label>
+            <input type="text" id="short_description" name="short_description" class="sn-field-input" required />
+          </div>
+          <div class="sn-form-field">
+            <label for="description" class="sn-field-label">Description</label>
+            <textarea id="description" name="description" class="sn-field-input sn-textarea"></textarea>
+          </div>
+          <div class="sn-form-field">
+            <label for="priority" class="sn-field-label">Priority</label>
+            <select id="priority" name="priority" class="sn-field-input">
+              <option value="">-- None --</option>
+              <option value="1">1 - Critical</option>
+              <option value="2">2 - High</option>
+              <option value="3">3 - Moderate</option>
+              <option value="4">4 - Low</option>
+              <option value="5">5 - Planning</option>
+            </select>
+          </div>
+          <div class="sn-form-field">
+            <label for="state" class="sn-field-label">State</label>
+            <select id="state" name="state" class="sn-field-input">
+              <option value="">-- None --</option>
+              <option value="1">New</option>
+              <option value="2">In Progress</option>
+              <option value="3">On Hold</option>
+              <option value="6">Resolved</option>
+              <option value="7">Closed</option>
+            </select>
+          </div>
+        </div>
       </div>
     `;
     
@@ -298,12 +376,10 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
     
     if (!headerContainer || !bodyContainer) return;
 
-    const basicHeaders = table === 'incident' 
-      ? '<tr><th>Number</th><th>Short Description</th><th>State</th><th>Priority</th><th>Actions</th></tr>'
-      : '<tr><th>Name</th><th>Created</th><th>Actions</th></tr>';
+    const basicHeaders = '<tr><th>Number</th><th>Short Description</th><th>State</th><th>Priority</th><th>Actions</th></tr>';
     
     headerContainer.innerHTML = basicHeaders;
-    bodyContainer.innerHTML = '<tr><td colspan="5" class="text-center">Loading...</td></tr>';
+    bodyContainer.innerHTML = '<tr><td colspan="5" class="text-center">Sample data - Connect to ServiceNow instance for live data</td></tr>';
   };
 
   // Global functions for UI Actions (attached to window)
@@ -314,7 +390,10 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
       if (form) {
         // Process form submission
         const formData = new FormData(form);
-        console.log('Submitting form:', Object.fromEntries(formData));
+        const dataObj = Object.fromEntries(formData);
+        console.log('Submitting form:', dataObj);
+        
+        // Here you would call saveRecord via AJAX
         alert(`${sysId ? 'Updated' : 'Created'} ${table} record successfully!`);
       }
     };
@@ -344,7 +423,7 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
     (window as any).editRecord = (recordSysId: string) => {
       // Load record for editing
       console.log('Editing record:', recordSysId);
-      // You would load the record data and populate the form
+      // You would reload the component with the sys_id
       if (formRef.current) {
         formRef.current.style.display = 'block';
       }
@@ -353,7 +432,7 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
     (window as any).deleteRecord = (recordSysId: string) => {
       if (confirm('Are you sure you want to delete this record?')) {
         console.log('Deleting record:', recordSysId);
-        // Process deletion
+        // Process deletion via AJAX
         alert('Record deleted successfully!');
         loadListData(); // Refresh list
       }
@@ -390,8 +469,35 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
           justify-content: space-between;
           align-items: center;
         }
+        .form-info {
+          color: #666;
+        }
+        .sn-form-loading, .sn-list-loading {
+          text-align: center;
+          padding: 40px;
+          color: #666;
+        }
+        .sn-form-section {
+          margin-bottom: 30px;
+        }
+        .sn-section-header {
+          color: #333;
+          font-size: 18px;
+          margin-bottom: 15px;
+          padding-bottom: 8px;
+          border-bottom: 2px solid #007bff;
+        }
+        .sn-section-fields {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 15px;
+        }
         .sn-form-field {
           margin-bottom: 15px;
+        }
+        .sn-form-field.mandatory .sn-field-label::after {
+          content: ' *';
+          color: red;
         }
         .sn-field-label {
           display: block;
@@ -405,6 +511,11 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
           border: 1px solid #ccc;
           border-radius: 4px;
           font-size: 14px;
+          box-sizing: border-box;
+        }
+        .sn-textarea {
+          min-height: 80px;
+          resize: vertical;
         }
         .sn-reference-field {
           display: flex;
@@ -460,7 +571,20 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
         .text-center {
           text-align: center;
         }
+        .error-message {
+          background: #f8d7da;
+          color: #721c24;
+          padding: 10px;
+          border-radius: 4px;
+          margin-bottom: 20px;
+        }
       `}} />
+      
+      {error && (
+        <div className="error-message">
+          <strong>Error:</strong> {error}
+        </div>
+      )}
       
       {(mode === 'form' || mode === 'both') && (
         <div ref={formRef} className="sn-form-wrapper"></div>
