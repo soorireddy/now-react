@@ -31,6 +31,12 @@ export default function Navigation({ tableName }: NavigationProps) {
                 >
                     Dashboard
                 </Link>
+                <Link 
+                    to="/stepper" 
+                    className={`nav-link ${isActive('/stepper') ? 'active' : ''}`}
+                >
+                    Stepper Workflow
+                </Link>
             </div>
         </nav>
     )

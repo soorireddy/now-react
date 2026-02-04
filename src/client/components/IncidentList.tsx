@@ -1,8 +1,16 @@
 import React from 'react'
 import './IncidentList.css'
 
-export default function IncidentList({ incidents, onEdit, onRefresh, service }) {
-    const handleDelete = async (incident) => {
+interface IncidentListProps {
+    incidents: any[]
+    onEdit: (incident: any) => void
+    onRefresh: () => void
+    service: any
+    readonly?: boolean
+}
+
+export default function IncidentList({ incidents, onEdit, onRefresh, service, readonly = false }: IncidentListProps) {
+    const handleDelete = async (incident: any) => {
         if (!confirm(`Are you sure you want to delete ${incident.number.display_value}?`)) {
             return
         }
@@ -11,13 +19,13 @@ export default function IncidentList({ incidents, onEdit, onRefresh, service }) 
             const sysId = typeof incident.sys_id === 'object' ? incident.sys_id.value : incident.sys_id
             await service.delete(sysId)
             onRefresh()
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to delete incident:', error)
             alert('Failed to delete incident: ' + (error.message || 'Unknown error'))
         }
     }
 
-    const getStateClass = (state) => {
+    const getStateClass = (state: any) => {
         const stateValue = typeof state === 'object' ? state.display_value : state
 
         switch (stateValue) {
@@ -36,7 +44,7 @@ export default function IncidentList({ incidents, onEdit, onRefresh, service }) 
         }
     }
 
-    const getImpactClass = (impact) => {
+    const getImpactClass = (impact: any) => {
         const impactValue = typeof impact === 'object' ? impact.value : impact
 
         switch (impactValue) {
@@ -64,7 +72,7 @@ export default function IncidentList({ incidents, onEdit, onRefresh, service }) 
                             <th>State</th>
                             <th>Impact</th>
                             <th>Opened</th>
-                            <th>Actions</th>
+                            {!readonly && <th>Actions</th>}
                         </tr>
                     </thead>
                     <tbody>
@@ -98,24 +106,26 @@ export default function IncidentList({ incidents, onEdit, onRefresh, service }) 
                                         </span>
                                     </td>
                                     <td>{openedAt}</td>
-                                    <td>
-                                        <div className="action-buttons">
-                                            <button
-                                                className="edit-button"
-                                                onClick={() => onEdit(incident)}
-                                                aria-label={`Edit incident ${number}`}
-                                            >
-                                                Edit
-                                            </button>
-                                            <button
-                                                className="delete-button"
-                                                onClick={() => handleDelete(incident)}
-                                                aria-label={`Delete incident ${number}`}
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </td>
+                                    {!readonly && (
+                                        <td>
+                                            <div className="action-buttons">
+                                                <button
+                                                    className="edit-button"
+                                                    onClick={() => onEdit(incident)}
+                                                    aria-label={`Edit incident ${number}`}
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    className="delete-button"
+                                                    onClick={() => handleDelete(incident)}
+                                                    aria-label={`Delete incident ${number}`}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </td>
+                                    )}
                                 </tr>
                             )
                         })}

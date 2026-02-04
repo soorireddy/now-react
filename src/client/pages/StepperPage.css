@@ -1,0 +1,116 @@
+/* Stepper Page Styles */
+.stepper-page {
+    padding: 2rem;
+}
+
+.step-content {
+    margin: 2rem 0;
+    min-height: 400px;
+}
+
+.step-form-container {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.step-list-container {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.review-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.review-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-left: 4px solid #2196f3;
+}
+
+.review-card h3 {
+    color: #2196f3;
+    margin-bottom: 1rem;
+}
+
+.review-item {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.review-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.review-label {
+    font-weight: 600;
+    color: #555;
+    display: inline-block;
+    min-width: 120px;
+}
+
+.review-value {
+    color: #333;
+}
+
+.stepper-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+}
+
+.stepper-actions .left {
+    flex: 1;
+}
+
+.stepper-actions .right {
+    display: flex;
+    gap: 1rem;
+}
+
+.success-message {
+    background: #e8f5e8;
+    color: #2e7d32;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin: 2rem 0;
+    text-align: center;
+    border-left: 4px solid #4caf50;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .stepper-page {
+        padding: 1rem;
+    }
+    
+    .review-section {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .stepper-actions {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .stepper-actions .right {
+        width: 100%;
+        justify-content: center;
+    }
+}

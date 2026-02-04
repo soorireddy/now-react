@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { IncidentService } from '../services/IncidentService'
 import IncidentList from '../components/IncidentList'
 
@@ -11,6 +11,7 @@ export default function IncidentListPage({ tableName }: IncidentListPageProps) {
     const [incidents, setIncidents] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const navigate = useNavigate()
 
     const incidentService = useMemo(() => new IncidentService(tableName), [tableName])
 
@@ -34,13 +35,13 @@ export default function IncidentListPage({ tableName }: IncidentListPageProps) {
 
     const handleEditClick = (incident: any) => {
         const sysId = typeof incident.sys_id === 'object' ? incident.sys_id.value : incident.sys_id
-        window.location.href = `/x_845458_react_incident_manager.do#/incidents/edit/${sysId}?table=${tableName}`
+        navigate(`/incidents/edit/${sysId}`)
     }
 
     return (
         <div className="incident-list-page">
             <div className="page-header">
-                <h2>({tableName})</h2>
+                <h2>Incidents ({tableName})</h2>
                 <Link to="/incidents/new" className="create-button">
                     Create New Incident
                 </Link>
