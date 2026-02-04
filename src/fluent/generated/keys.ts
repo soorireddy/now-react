@@ -5,6 +5,10 @@ declare global {
         namespace Internal {
             interface Keys extends KeysRegistry {
                 explicit: {
+                    'analytics-dashboard-page': {
+                        table: 'sys_ui_page'
+                        id: '9875b683956343ea9e76f29a46e476a7'
+                    }
                     bom_json: {
                         table: 'sys_module'
                         id: 'c3e9e7f43760443da54b68962d036d85'
@@ -13,9 +17,33 @@ declare global {
                         table: 'sys_ui_page'
                         id: '1b6334fd138d49189d1ce9081b367414'
                     }
+                    'node_modules/ag-grid-community/styles/ag-grid.css': {
+                        table: 'sys_ux_theme_asset'
+                        id: '0d659aa1501b4f8a813e905dae6b5549'
+                    }
+                    'node_modules/ag-grid-community/styles/ag-theme-alpine.css': {
+                        table: 'sys_ux_theme_asset'
+                        id: '75a033b2dad24146a14ba86a0a94a423'
+                    }
                     package_json: {
                         table: 'sys_module'
                         id: 'dd59fd604025429c84cb459319b28212'
+                    }
+                    'x_845458_react/____insertStyle': {
+                        table: 'sys_ux_lib_asset'
+                        id: '480ce7fc222a4c3599bbe03583817c58'
+                    }
+                    'x_845458_react/____insertStyle.js.map': {
+                        table: 'sys_ux_lib_asset'
+                        id: '8a47f5d4c0b94070927872c03fb36753'
+                    }
+                    'x_845458_react/dashboard-main': {
+                        table: 'sys_ux_lib_asset'
+                        id: '0b443a62b78c45bc9a4de330539e6c68'
+                    }
+                    'x_845458_react/dashboard-main.js.map': {
+                        table: 'sys_ux_lib_asset'
+                        id: '3b89be6b720c4e2189c9771a3b52d8e9'
                     }
                     'x_845458_react/main': {
                         table: 'sys_ux_lib_asset'
