@@ -1,42 +1,65 @@
 import React from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
+import './Navigation.css'
 
 interface NavigationProps {
     tableName: string
 }
 
 export default function Navigation({ tableName }: NavigationProps) {
+    const navigate = useNavigate()
     const location = useLocation()
 
     const isActive = (path: string) => {
-        return location.pathname === path || location.pathname.startsWith(path)
+        if (path === '/incidents') {
+            return location.pathname === '/' || location.pathname === '/incidents'
+        }
+        return location.pathname.startsWith(path)
     }
 
+    const navigationButtons = [
+        {
+            label: 'Incidents',
+            path: '/incidents',
+            icon: '📋',
+        },
+        {
+            label: 'Create New',
+            path: '/incidents/new',
+            icon: '➕',
+        },
+        {
+            label: 'Stepper Workflow',
+            path: '/stepper',
+            icon: '📝',
+        },
+        {
+            label: 'Dashboard',
+            path: '/dashboard',
+            icon: '📊',
+        },
+    ]
+
     return (
-        <nav className="app-navigation">
-            <div className="nav-header">
-                <h1>Incident Manager</h1>
-                <span className="table-info">Table: {tableName}</span>
-            </div>
-            <div className="nav-links">
-                <Link 
-                    to="/incidents" 
-                    className={`nav-link ${isActive('/incidents') ? 'active' : ''}`}
-                >
-                    Incidents
-                </Link>
-                <Link 
-                    to="/dashboard" 
-                    className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}
-                >
-                    Dashboard
-                </Link>
-                <Link 
-                    to="/stepper" 
-                    className={`nav-link ${isActive('/stepper') ? 'active' : ''}`}
-                >
-                    Stepper Workflow
-                </Link>
+        <nav className="navigation">
+            <div className="nav-container">
+                <div className="nav-brand">
+                    <h2>ServiceNow Manager</h2>
+                    <span className="table-badge">Table: {tableName}</span>
+                </div>
+
+                <div className="nav-buttons">
+                    {navigationButtons.map((button) => (
+                        <button
+                            key={button.path}
+                            className={`nav-button ${isActive(button.path) ? 'active' : ''}`}
+                            onClick={() => navigate(button.path)}
+                        >
+                            <span className="nav-icon">{button.icon}</span>
+                            <span className="nav-label">{button.label}</span>
+                        </button>
+                    ))}
+                </div>
             </div>
         </nav>
     )

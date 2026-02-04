@@ -20,10 +20,12 @@ declare global {
                     'node_modules/ag-grid-community/styles/ag-grid.css': {
                         table: 'sys_ux_theme_asset'
                         id: '0d659aa1501b4f8a813e905dae6b5549'
+                        deleted: true
                     }
                     'node_modules/ag-grid-community/styles/ag-theme-alpine.css': {
                         table: 'sys_ux_theme_asset'
                         id: '75a033b2dad24146a14ba86a0a94a423'
+                        deleted: true
                     }
                     package_json: {
                         table: 'sys_module'
