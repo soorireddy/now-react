@@ -1,6 +1,10 @@
 {
-  "scope": "x_1539009_react",
-  "scopeId": "a2e2311e53ba72107d5fd301a0490e71",
-  "name": "React",
-  "tsconfigPath": "./src/server/tsconfig.json"
+    "scope": "x_1872892_react",
+    "scopeId": "9af375a283f6f210c7e81c29feaad3ef",
+    "name": "React",
+    "tsconfigPath": "./src/server/tsconfig.json",
+    "licensing": {
+        "enforceLicense": "none"
+    },
+    "description": "REact"
 }
