@@ -31,37 +31,37 @@ declare global {
                         table: 'sys_module'
                         id: 'dd59fd604025429c84cb459319b28212'
                     }
-                    'x_845458_react/____insertStyle': {
+                    'x_1539009_react/____insertStyle': {
                         table: 'sys_ux_lib_asset'
                         id: '480ce7fc222a4c3599bbe03583817c58'
                         deleted: true
                     }
-                    'x_845458_react/____insertStyle.js.map': {
+                    'x_1539009_react/____insertStyle.js.map': {
                         table: 'sys_ux_lib_asset'
                         id: '8a47f5d4c0b94070927872c03fb36753'
                         deleted: true
                     }
-                    'x_845458_react/Dashboard': {
+                    'x_1539009_react/Dashboard': {
                         table: 'sys_ux_lib_asset'
                         id: 'a29f074bfeff459f89dd5774bbe47ce0'
                     }
-                    'x_845458_react/dashboard-main': {
+                    'x_1539009_react/dashboard-main': {
                         table: 'sys_ux_lib_asset'
                         id: '0b443a62b78c45bc9a4de330539e6c68'
                     }
-                    'x_845458_react/dashboard-main.js.map': {
+                    'x_1539009_react/dashboard-main.js.map': {
                         table: 'sys_ux_lib_asset'
                         id: '3b89be6b720c4e2189c9771a3b52d8e9'
                     }
-                    'x_845458_react/Dashboard.js.map': {
+                    'x_1539009_react/Dashboard.js.map': {
                         table: 'sys_ux_lib_asset'
                         id: 'e5c003c8e5e74e23b29788863c1cefb3'
                     }
-                    'x_845458_react/main': {
+                    'x_1539009_react/main': {
                         table: 'sys_ux_lib_asset'
                         id: '5627094bd8d74cef80790b162bdb3cc6'
                     }
-                    'x_845458_react/main.js.map': {
+                    'x_1539009_react/main.js.map': {
                         table: 'sys_ux_lib_asset'
                         id: 'b4b96f39bc3d47a7b4eafce742def161'
                     }
