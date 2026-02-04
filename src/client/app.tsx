@@ -5,6 +5,7 @@ import IncidentListPage from './pages/IncidentListPage'
 import IncidentFormPage from './pages/IncidentFormPage'
 import DashboardPage from './pages/DashboardPage'
 import StepperPage from './pages/StepperPage'
+import OOBDemoPage from './pages/OOBDemoPage'
 import './app.css'
 
 export default function App() {
@@ -22,8 +23,9 @@ export default function App() {
                         <Route path="/incidents" element={<IncidentListPage tableName={tableName} />} />
                         <Route path="/incidents/new" element={<IncidentFormPage tableName={tableName} />} />
                         <Route path="/incidents/edit/:id" element={<IncidentFormPage tableName={tableName} />} />
-                        <Route path="/dashboard" element={<DashboardPage />} />
+                        <Route path="/dashboard" element={<DashboardPage tableName={tableName} />} />
                         <Route path="/stepper" element={<StepperPage tableName={tableName} />} />
+                        <Route path="/oob-demo" element={<OOBDemoPage />} />
                     </Routes>
                 </main>
             </div>

@@ -38,6 +38,11 @@ export default function Navigation({ tableName }: NavigationProps) {
             path: '/dashboard',
             icon: '📊',
         },
+        {
+            label: 'OOB Demo',
+            path: '/oob-demo',
+            icon: '🔧',
+        },
     ]
 
     return (

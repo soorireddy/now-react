@@ -47,6 +47,14 @@ declare global {
                         table: 'sys_module'
                         id: 'dd59fd604025429c84cb459319b28212'
                     }
+                    'src_server_table-utils_js': {
+                        table: 'sys_module'
+                        id: '6939acbe6fa74b37be8683fe0aba3d51'
+                    }
+                    'table-utils': {
+                        table: 'sys_script_include'
+                        id: 'eeb1fb15e5604920a0a44eed932006f4'
+                    }
                     'x_1872892_react/____insertStyle': {
                         table: 'sys_ux_lib_asset'
                         id: '480ce7fc222a4c3599bbe03583817c58'
