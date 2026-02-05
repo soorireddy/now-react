@@ -400,12 +400,8 @@ const OOBDemoPage: React.FC = () => {
               }}
             >
               <option value="incident">Incident</option>
-              <option value="change_request">Change Request</option>
-              <option value="problem">Problem</option>
-              <option value="sc_request">Service Catalog Request</option>
               <option value="task">Task</option>
               <option value="sys_user">User</option>
-              <option value="cmdb_ci">Configuration Item</option>
             </select>
           </div>
 
@@ -421,9 +417,7 @@ const OOBDemoPage: React.FC = () => {
                 borderRadius: '6px'
               }}
             >
-              <option value="default">Default</option>
-              <option value="ess">ESS</option>
-              <option value="itil">ITIL</option>
+              <option value="">Default View</option>             
               <option value="mobile">Mobile</option>
             </select>
           </div>
