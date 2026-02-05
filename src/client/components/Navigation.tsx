@@ -29,6 +29,11 @@ export default function Navigation({ tableName }: NavigationProps) {
             icon: '➕',
         },
         {
+            label: 'Dynamic Form',
+            path: '/dynamic-form',
+            icon: '📄',
+        },
+        {
             label: 'Stepper Workflow',
             path: '/stepper',
             icon: '📝',

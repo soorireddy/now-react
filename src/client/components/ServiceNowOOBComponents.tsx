@@ -24,10 +24,15 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
   const listRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [formData, setFormData] = useState<any>(null);
+  const [listData, setListData] = useState<any>(null);
 
   useEffect(() => {
     setLoading(true);
     setError('');
+    setFormData(null);
+    setListData(null);
+    
     // Initialize ServiceNow OOB components when the component mounts
     initializeServiceNowComponents();
   }, [table, sysId, mode, view]);
@@ -47,25 +52,27 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
   const initializeFormView = () => {
     if (!formRef.current) return;
 
-    // Create ServiceNow form container
     const formHtml = `
       <div id="sn-form-container">
         <div class="sn-form-header">
           <h2>${table.charAt(0).toUpperCase() + table.slice(1)} Form</h2>
           <div class="form-info">
-            <small>View: ${view} | ${sysId ? 'Edit Mode' : 'Create Mode'}</small>
+            <small>Table: <strong>${table}</strong> | View: <strong>${view}</strong> | ${sysId ? 'Edit Mode' : 'Create Mode'}</small>
           </div>
         </div>
-        <div class="sn-form-loading">Loading form fields...</div>
+        <div class="sn-form-loading">
+          <div class="loading-spinner"></div>
+          <p>Loading form configuration from ServiceNow...</p>
+        </div>
         <form id="form_${table}" class="sn-form" method="post" action="" style="display:none;">
           <input type="hidden" name="sysparm_form" value="${table}">
           <input type="hidden" name="sys_id" value="${sysId}">
           <div id="form_sections_${table}"></div>
           <div class="sn-form-actions">
-            <button type="button" id="btn-submit" class="btn btn-primary" onclick="submitForm()">
-              ${sysId ? 'Update' : 'Submit'}
+            <button type="button" id="btn-submit" class="btn btn-primary">
+              ${sysId ? 'Update Record' : 'Create Record'}
             </button>
-            <button type="button" id="btn-cancel" class="btn btn-secondary" onclick="cancelForm()">
+            <button type="button" id="btn-cancel" class="btn btn-secondary">
               Cancel
             </button>
           </div>
@@ -74,29 +81,29 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
     `;
     
     formRef.current.innerHTML = formHtml;
-    
-    // Load form fields using ServiceNow's form renderer
     loadFormFields();
   };
 
   const initializeListView = () => {
     if (!listRef.current) return;
 
-    // Create ServiceNow list container
     const listHtml = `
       <div id="sn-list-container">
         <div class="sn-list-header">
           <h2>${table.charAt(0).toUpperCase() + table.slice(1)} List</h2>
           <div class="sn-list-actions">
-            <button type="button" id="btn-new" class="btn btn-primary" onclick="createNewRecord()">
+            <button type="button" id="btn-new" class="btn btn-primary">
               New ${table.charAt(0).toUpperCase() + table.slice(1)}
             </button>
-            <button type="button" id="btn-refresh" class="btn btn-secondary" onclick="refreshList()">
-              Refresh
+            <button type="button" id="btn-refresh" class="btn btn-secondary">
+              Refresh List
             </button>
           </div>
         </div>
-        <div class="sn-list-loading">Loading list data...</div>
+        <div class="sn-list-loading">
+          <div class="loading-spinner"></div>
+          <p>Loading list configuration from ServiceNow...</p>
+        </div>
         <div id="list_${table}" class="sn-list-table-container" style="display:none;">
           <table class="sn-list-table">
             <thead id="list-header-${table}"></thead>
@@ -107,21 +114,16 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
     `;
     
     listRef.current.innerHTML = listHtml;
-    
-    // Load list data using ServiceNow's list renderer
     loadListData();
   };
 
   const loadFormFields = () => {
-    // Check if GlideAjax is available, if not use fallback
     if (typeof window.GlideAjax === 'undefined') {
-      console.warn('GlideAjax not available, using fallback form');
+      setError('GlideAjax not available. This demo requires a live ServiceNow instance.');
       hideLoading('form');
-      renderBasicForm();
       return;
     }
 
-    // Use ServiceNow's server-side APIs to get form structure
     const ajax = new window.GlideAjax('TableUtils');
     ajax.addParam('sysparm_name', 'getFormFields');
     ajax.addParam('sysparm_table', table);
@@ -129,17 +131,15 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
     ajax.addParam('sysparm_sys_id', sysId);
     ajax.getXMLAnswer((response: string) => {
       try {
-        const formData = JSON.parse(response);
-        if (formData.error) {
-          console.error('Server error:', formData.error);
-          setError(formData.error);
-          renderBasicForm();
+        const data = JSON.parse(response);
+        if (data.error) {
+          setError(`Form Error: ${data.error}`);
         } else {
-          renderDynamicForm(formData);
+          setFormData(data);
+          renderDynamicForm(data);
         }
       } catch (e) {
-        console.error('Error parsing form data:', e);
-        renderBasicForm();
+        setError(`Failed to parse form response: ${e}`);
       }
       hideLoading('form');
       setLoading(false);
@@ -147,15 +147,12 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
   };
 
   const loadListData = () => {
-    // Check if GlideAjax is available, if not use fallback
     if (typeof window.GlideAjax === 'undefined') {
-      console.warn('GlideAjax not available, using fallback list');
+      setError('GlideAjax not available. This demo requires a live ServiceNow instance.');
       hideLoading('list');
-      renderBasicList();
       return;
     }
 
-    // Use ServiceNow's server-side APIs to get list data
     const ajax = new window.GlideAjax('TableUtils');
     ajax.addParam('sysparm_name', 'getListData');
     ajax.addParam('sysparm_table', table);
@@ -163,17 +160,15 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
     ajax.addParam('sysparm_limit', '25');
     ajax.getXMLAnswer((response: string) => {
       try {
-        const listData = JSON.parse(response);
-        if (listData.error) {
-          console.error('Server error:', listData.error);
-          setError(listData.error);
-          renderBasicList();
+        const data = JSON.parse(response);
+        if (data.error) {
+          setError(`List Error: ${data.error}`);
         } else {
-          renderDynamicList(listData);
+          setListData(data);
+          renderDynamicList(data);
         }
       } catch (e) {
-        console.error('Error parsing list data:', e);
-        renderBasicList();
+        setError(`Failed to parse list response: ${e}`);
       }
       hideLoading('list');
       setLoading(false);
@@ -188,28 +183,49 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
     if (contentEl) contentEl.style.display = 'block';
   };
 
-  const renderDynamicForm = (formData: any) => {
+  const renderDynamicForm = (data: any) => {
     const container = document.getElementById(`form_sections_${table}`);
-    if (!container || !formData.layout || !formData.layout.sections) return;
+    if (!container || !data.layout || !data.layout.sections) {
+      setError('Invalid form layout data received');
+      return;
+    }
 
     let sectionsHtml = '';
     
-    // Render each section
-    formData.layout.sections.forEach((section: any) => {
-      if (section.fields && section.fields.length > 0) {
+    if (data.layout.sections.length === 0) {
+      sectionsHtml = `
+        <div class="no-data-message">
+          <h3>No form configuration found</h3>
+          <p>No form sections found for table <strong>${table}</strong> with view <strong>${view}</strong>.</p>
+          <p>This could mean:</p>
+          <ul>
+            <li>The table doesn't have a form configured</li>
+            <li>The specified view doesn't exist</li>
+            <li>You don't have access to the form configuration</li>
+          </ul>
+        </div>
+      `;
+    } else {
+      // Render each section
+      data.layout.sections.forEach((section: any, index: number) => {
         sectionsHtml += `
           <div class="sn-form-section">
-            ${section.caption ? `<h3 class="sn-section-header">${section.caption}</h3>` : ''}
+            <h3 class="sn-section-header">
+              ${section.caption || `Section ${index + 1}`}
+              <small class="section-info">(${section.fields.length} fields, position: ${section.position})</small>
+            </h3>
             <div class="sn-section-fields">
         `;
         
         section.fields.forEach((field: any) => {
           if (field.type === 'field' && field.element) {
-            const currentValue = formData.values[field.element] || field.default_value || '';
+            const currentValue = data.values[field.element] || field.default_value || '';
             sectionsHtml += `
               <div class="sn-form-field ${field.mandatory ? 'mandatory' : ''}">
                 <label for="${field.element}" class="sn-field-label">
-                  ${field.label}${field.mandatory ? ' *' : ''}
+                  ${field.label}
+                  ${field.mandatory ? ' <span class="required">*</span>' : ''}
+                  <small class="field-info">(${field.internal_type})</small>
                 </label>
                 ${renderFieldInput(field, currentValue)}
               </div>
@@ -221,8 +237,8 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
             </div>
           </div>
         `;
-      }
-    });
+      });
+    }
     
     container.innerHTML = sectionsHtml;
   };
@@ -234,18 +250,20 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
     switch (field.internal_type) {
       case 'choice':
         let options = '<option value="">-- None --</option>';
-        field.choices?.forEach((choice: any) => {
-          const selected = choice.value === value ? 'selected' : '';
-          options += `<option value="${choice.value}" ${selected}>${choice.label}</option>`;
-        });
+        if (field.choices && field.choices.length > 0) {
+          field.choices.forEach((choice: any) => {
+            const selected = choice.value === value ? 'selected' : '';
+            options += `<option value="${choice.value}" ${selected}>${choice.label}</option>`;
+          });
+        }
         return `<select id="${field.element}" name="${field.element}" class="sn-field-input" ${disabled} ${required}>${options}</select>`;
       
       case 'reference':
         return `
           <div class="sn-reference-field">
-            <input type="text" id="${field.element}" name="${field.element}" value="${value}" class="sn-field-input" ${disabled} ${required} />
-            <button type="button" class="btn btn-sm btn-secondary" onclick="openReferenceSelector('${field.element}', '${field.reference_table}')" ${disabled}>
-              ...
+            <input type="text" id="${field.element}" name="${field.element}" value="${value}" class="sn-field-input" ${disabled} ${required} placeholder="Reference to ${field.reference_table}" />
+            <button type="button" class="btn btn-sm btn-secondary" ${disabled} title="Reference lookup for ${field.reference_table}">
+              🔍
             </button>
           </div>
         `;
@@ -260,16 +278,23 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
       
       case 'boolean':
         const checked = value === 'true' || value === '1' ? 'checked' : '';
-        return `<input type="checkbox" id="${field.element}" name="${field.element}" ${checked} class="sn-field-input" ${disabled} />`;
+        return `
+          <label class="checkbox-container">
+            <input type="checkbox" id="${field.element}" name="${field.element}" ${checked} class="sn-checkbox" ${disabled} />
+            <span class="checkbox-label">Yes</span>
+          </label>
+        `;
       
       case 'html':
       case 'journal':
       case 'journal_input':
-        return `<textarea id="${field.element}" name="${field.element}" class="sn-field-input sn-textarea" ${disabled} ${required}>${value}</textarea>`;
+        return `<textarea id="${field.element}" name="${field.element}" class="sn-field-input sn-textarea" ${disabled} ${required} placeholder="Enter ${field.label.toLowerCase()}">${value}</textarea>`;
       
       case 'integer':
+        return `<input type="number" id="${field.element}" name="${field.element}" value="${value}" class="sn-field-input" ${disabled} ${required} step="1" />`;
+      
       case 'decimal':
-        return `<input type="number" id="${field.element}" name="${field.element}" value="${value}" class="sn-field-input" ${disabled} ${required} ${field.max_length ? 'max="' + field.max_length + '"' : ''} />`;
+        return `<input type="number" id="${field.element}" name="${field.element}" value="${value}" class="sn-field-input" ${disabled} ${required} step="0.01" />`;
       
       case 'email':
         return `<input type="email" id="${field.element}" name="${field.element}" value="${value}" class="sn-field-input" ${disabled} ${required} />`;
@@ -278,170 +303,110 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
         return `<input type="url" id="${field.element}" name="${field.element}" value="${value}" class="sn-field-input" ${disabled} ${required} />`;
       
       default:
-        return `<input type="text" id="${field.element}" name="${field.element}" value="${value}" class="sn-field-input" ${disabled} ${required} ${field.max_length ? 'maxlength="' + field.max_length + '"' : ''} />`;
+        return `<input type="text" id="${field.element}" name="${field.element}" value="${value}" class="sn-field-input" ${disabled} ${required} ${field.max_length ? 'maxlength="' + field.max_length + '"' : ''} placeholder="Enter ${field.label.toLowerCase()}" />`;
     }
   };
 
-  const renderDynamicList = (listData: any) => {
+  const renderDynamicList = (data: any) => {
     const headerContainer = document.getElementById(`list-header-${table}`);
     const bodyContainer = document.getElementById(`list-body-${table}`);
     
-    if (!headerContainer || !bodyContainer || !listData.columns || !listData.records) return;
+    if (!headerContainer || !bodyContainer || !data.columns) {
+      setError('Invalid list layout data received');
+      return;
+    }
+
+    if (data.columns.length === 0) {
+      const noDataHtml = `
+        <tr><td class="no-data-message">
+          <h3>No list configuration found</h3>
+          <p>No list columns configured for table <strong>${table}</strong> with view <strong>${view}</strong>.</p>
+        </td></tr>
+      `;
+      headerContainer.innerHTML = '<tr><th>Message</th></tr>';
+      bodyContainer.innerHTML = noDataHtml;
+      return;
+    }
 
     // Render table headers
     let headerHtml = '<tr>';
-    listData.columns.forEach((column: any) => {
-      headerHtml += `<th class="sn-list-header" title="${column.type}">${column.label}</th>`;
+    data.columns.forEach((column: any) => {
+      headerHtml += `
+        <th class="sn-list-header" title="${column.name} (${column.type})">
+          ${column.label}
+          <small class="column-info">${column.type}</small>
+        </th>
+      `;
     });
     headerHtml += '<th class="sn-list-header">Actions</th></tr>';
     headerContainer.innerHTML = headerHtml;
 
     // Render table rows
     let bodyHtml = '';
-    listData.records.forEach((record: any) => {
-      bodyHtml += '<tr class="sn-list-row">';
-      listData.columns.forEach((column: any) => {
-        const value = record[column.name] || '';
-        bodyHtml += `<td class="sn-list-cell" title="${column.name}">${value}</td>`;
+    if (data.records && data.records.length > 0) {
+      data.records.forEach((record: any) => {
+        bodyHtml += '<tr class="sn-list-row">';
+        data.columns.forEach((column: any) => {
+          const value = record[column.name] || '';
+          bodyHtml += `<td class="sn-list-cell" title="${column.name}: ${value}">${value}</td>`;
+        });
+        bodyHtml += `
+          <td class="sn-list-cell">
+            <button type="button" class="btn btn-sm btn-primary" onclick="editRecord('${record.sys_id}')" title="Edit ${record.sys_id}">
+              Edit
+            </button>
+            <button type="button" class="btn btn-sm btn-danger" onclick="deleteRecord('${record.sys_id}')" title="Delete ${record.sys_id}">
+              Delete
+            </button>
+          </td>
+        </tr>`;
       });
-      bodyHtml += `
-        <td class="sn-list-cell">
-          <button type="button" class="btn btn-sm btn-primary" onclick="editRecord('${record.sys_id}')" title="Edit Record">
-            Edit
-          </button>
-          <button type="button" class="btn btn-sm btn-danger" onclick="deleteRecord('${record.sys_id}')" title="Delete Record">
-            Delete
-          </button>
-        </td>
-      </tr>`;
-    });
-    
-    if (listData.records.length === 0) {
-      bodyHtml = `<tr><td colspan="${listData.columns.length + 1}" class="text-center">No records found</td></tr>`;
+    } else {
+      bodyHtml = `<tr><td colspan="${data.columns.length + 1}" class="text-center no-data-message">No records found in table ${table}</td></tr>`;
     }
     
     bodyContainer.innerHTML = bodyHtml;
   };
 
-  const renderBasicForm = () => {
-    // Fallback basic form for common fields
-    const container = document.getElementById(`form_sections_${table}`);
-    if (!container) return;
-
-    const basicFields = `
-      <div class="sn-form-section">
-        <h3 class="sn-section-header">Basic Information</h3>
-        <div class="sn-section-fields">
-          <div class="sn-form-field mandatory">
-            <label for="short_description" class="sn-field-label">Short Description *</label>
-            <input type="text" id="short_description" name="short_description" class="sn-field-input" required />
-          </div>
-          <div class="sn-form-field">
-            <label for="description" class="sn-field-label">Description</label>
-            <textarea id="description" name="description" class="sn-field-input sn-textarea"></textarea>
-          </div>
-          <div class="sn-form-field">
-            <label for="priority" class="sn-field-label">Priority</label>
-            <select id="priority" name="priority" class="sn-field-input">
-              <option value="">-- None --</option>
-              <option value="1">1 - Critical</option>
-              <option value="2">2 - High</option>
-              <option value="3">3 - Moderate</option>
-              <option value="4">4 - Low</option>
-              <option value="5">5 - Planning</option>
-            </select>
-          </div>
-          <div class="sn-form-field">
-            <label for="state" class="sn-field-label">State</label>
-            <select id="state" name="state" class="sn-field-input">
-              <option value="">-- None --</option>
-              <option value="1">New</option>
-              <option value="2">In Progress</option>
-              <option value="3">On Hold</option>
-              <option value="6">Resolved</option>
-              <option value="7">Closed</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    `;
-    
-    container.innerHTML = basicFields;
-  };
-
-  const renderBasicList = () => {
-    // Fallback basic list
-    const headerContainer = document.getElementById(`list-header-${table}`);
-    const bodyContainer = document.getElementById(`list-body-${table}`);
-    
-    if (!headerContainer || !bodyContainer) return;
-
-    const basicHeaders = '<tr><th>Number</th><th>Short Description</th><th>State</th><th>Priority</th><th>Actions</th></tr>';
-    
-    headerContainer.innerHTML = basicHeaders;
-    bodyContainer.innerHTML = '<tr><td colspan="5" class="text-center">Sample data - Connect to ServiceNow instance for live data</td></tr>';
-  };
-
-  // Global functions for UI Actions (attached to window)
+  // Global functions for UI Actions
   useEffect(() => {
-    // UI Actions
     (window as any).submitForm = () => {
       const form = document.getElementById(`form_${table}`) as HTMLFormElement;
       if (form) {
-        // Process form submission
         const formData = new FormData(form);
         const dataObj = Object.fromEntries(formData);
-        console.log('Submitting form:', dataObj);
-        
-        // Here you would call saveRecord via AJAX
-        alert(`${sysId ? 'Updated' : 'Created'} ${table} record successfully!`);
+        console.log('Form data to submit:', dataObj);
+        alert(`Would ${sysId ? 'update' : 'create'} ${table} record with data: ${JSON.stringify(dataObj, null, 2)}`);
       }
     };
 
     (window as any).cancelForm = () => {
-      if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-        // Reset form or navigate away
+      if (confirm('Cancel form? Any unsaved changes will be lost.')) {
         const form = document.getElementById(`form_${table}`) as HTMLFormElement;
         form?.reset();
       }
     };
 
     (window as any).createNewRecord = () => {
-      // Clear form for new record
-      const form = document.getElementById(`form_${table}`) as HTMLFormElement;
-      form?.reset();
-      // Show form if in list mode
-      if (formRef.current) {
-        formRef.current.style.display = 'block';
-      }
+      console.log(`Create new ${table} record`);
+      alert(`Would navigate to create new ${table} record`);
     };
 
     (window as any).refreshList = () => {
+      console.log('Refreshing list...');
       loadListData();
     };
 
     (window as any).editRecord = (recordSysId: string) => {
-      // Load record for editing
-      console.log('Editing record:', recordSysId);
-      // You would reload the component with the sys_id
-      if (formRef.current) {
-        formRef.current.style.display = 'block';
-      }
+      console.log(`Edit record: ${recordSysId}`);
+      alert(`Would navigate to edit ${table} record: ${recordSysId}`);
     };
 
     (window as any).deleteRecord = (recordSysId: string) => {
-      if (confirm('Are you sure you want to delete this record?')) {
-        console.log('Deleting record:', recordSysId);
-        // Process deletion via AJAX
-        alert('Record deleted successfully!');
-        loadListData(); // Refresh list
+      if (confirm(`Delete record ${recordSysId}?`)) {
+        console.log(`Delete record: ${recordSysId}`);
+        alert(`Would delete ${table} record: ${recordSysId}`);
       }
-    };
-
-    (window as any).openReferenceSelector = (fieldName: string, referenceTable: string) => {
-      console.log(`Opening reference selector for ${fieldName} (${referenceTable})`);
-      // Open ServiceNow's reference selector dialog
-      // This would typically open a popup to select a reference record
     };
   }, [table, sysId]);
 
@@ -451,121 +416,174 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
         __html: `
         .servicenow-oob-components {
           padding: 20px;
-          max-width: 1200px;
+          max-width: 1400px;
           margin: 0 auto;
         }
         .sn-form, .sn-list-container {
           background: #fff;
           border: 1px solid #ddd;
-          border-radius: 4px;
+          border-radius: 8px;
           margin-bottom: 20px;
           padding: 20px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         .sn-form-header, .sn-list-header {
           margin-bottom: 20px;
-          padding-bottom: 10px;
-          border-bottom: 1px solid #eee;
+          padding-bottom: 15px;
+          border-bottom: 2px solid #007bff;
           display: flex;
           justify-content: space-between;
           align-items: center;
         }
-        .form-info {
+        .form-info, .section-info, .field-info, .column-info {
           color: #666;
+          font-size: 12px;
         }
         .sn-form-loading, .sn-list-loading {
           text-align: center;
           padding: 40px;
           color: #666;
         }
+        .loading-spinner {
+          width: 40px;
+          height: 40px;
+          border: 4px solid #f3f3f3;
+          border-top: 4px solid #007bff;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 0 auto 20px;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
         .sn-form-section {
-          margin-bottom: 30px;
+          margin-bottom: 40px;
+          border: 1px solid #e9ecef;
+          border-radius: 8px;
+          padding: 20px;
+          background: #f8f9fa;
         }
         .sn-section-header {
           color: #333;
           font-size: 18px;
-          margin-bottom: 15px;
-          padding-bottom: 8px;
-          border-bottom: 2px solid #007bff;
+          margin-bottom: 20px;
+          padding-bottom: 10px;
+          border-bottom: 1px solid #dee2e6;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
         }
         .sn-section-fields {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 15px;
+          grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+          gap: 20px;
         }
         .sn-form-field {
-          margin-bottom: 15px;
+          background: white;
+          padding: 15px;
+          border-radius: 6px;
+          border: 1px solid #dee2e6;
         }
-        .sn-form-field.mandatory .sn-field-label::after {
-          content: ' *';
-          color: red;
+        .sn-form-field.mandatory {
+          border-left: 4px solid #dc3545;
         }
         .sn-field-label {
           display: block;
-          margin-bottom: 5px;
+          margin-bottom: 8px;
           font-weight: bold;
           color: #333;
         }
+        .required {
+          color: #dc3545;
+        }
         .sn-field-input {
           width: 100%;
-          padding: 8px 12px;
-          border: 1px solid #ccc;
-          border-radius: 4px;
+          padding: 10px 15px;
+          border: 1px solid #ced4da;
+          border-radius: 6px;
           font-size: 14px;
           box-sizing: border-box;
+          transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .sn-field-input:focus {
+          border-color: #007bff;
+          box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+          outline: none;
         }
         .sn-textarea {
-          min-height: 80px;
+          min-height: 100px;
           resize: vertical;
         }
         .sn-reference-field {
           display: flex;
-          gap: 5px;
+          gap: 8px;
         }
         .sn-reference-field input {
           flex: 1;
         }
-        .sn-form-actions, .sn-list-actions {
-          margin-top: 20px;
+        .checkbox-container {
           display: flex;
-          gap: 10px;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+        }
+        .sn-checkbox {
+          width: auto !important;
+        }
+        .sn-form-actions, .sn-list-actions {
+          margin-top: 30px;
+          display: flex;
+          gap: 15px;
         }
         .sn-list-table {
           width: 100%;
           border-collapse: collapse;
+          margin-top: 20px;
         }
         .sn-list-header, .sn-list-cell {
-          padding: 10px;
-          border: 1px solid #ddd;
+          padding: 12px;
+          border: 1px solid #dee2e6;
           text-align: left;
         }
         .sn-list-header {
-          background-color: #f5f5f5;
+          background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
           font-weight: bold;
+          color: #495057;
         }
         .sn-list-row:hover {
-          background-color: #f9f9f9;
+          background-color: #f8f9fa;
+        }
+        .sn-list-row:nth-child(even) {
+          background-color: #fcfcfc;
         }
         .btn {
-          padding: 8px 16px;
+          padding: 10px 20px;
           border: none;
-          border-radius: 4px;
+          border-radius: 6px;
           cursor: pointer;
           font-size: 14px;
+          font-weight: 500;
+          transition: all 0.3s;
+        }
+        .btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
         .btn-primary {
-          background-color: #007bff;
+          background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
           color: white;
         }
         .btn-secondary {
-          background-color: #6c757d;
+          background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);
           color: white;
         }
         .btn-danger {
-          background-color: #dc3545;
+          background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
           color: white;
         }
         .btn-sm {
-          padding: 4px 8px;
+          padding: 6px 12px;
           font-size: 12px;
         }
         .text-center {
@@ -574,9 +592,18 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
         .error-message {
           background: #f8d7da;
           color: #721c24;
-          padding: 10px;
-          border-radius: 4px;
+          padding: 15px;
+          border-radius: 6px;
           margin-bottom: 20px;
+          border: 1px solid #f5c6cb;
+        }
+        .no-data-message {
+          padding: 40px;
+          text-align: center;
+          color: #6c757d;
+          background: #f8f9fa;
+          border-radius: 8px;
+          border: 1px dashed #dee2e6;
         }
       `}} />
       
@@ -592,6 +619,34 @@ const ServiceNowOOBComponents: React.FC<ServiceNowOOBComponentsProps> = ({
       
       {(mode === 'list' || mode === 'both') && (
         <div ref={listRef} className="sn-list-wrapper"></div>
+      )}
+      
+      {/* Debug Info */}
+      {(formData || listData) && (
+        <div style={{
+          marginTop: '30px',
+          padding: '20px',
+          background: '#f8f9fa',
+          borderRadius: '8px',
+          fontSize: '12px',
+          color: '#666'
+        }}>
+          <h4>Debug Information:</h4>
+          {formData && (
+            <div>
+              <strong>Form Data:</strong> {formData.layout.sections.length} sections found
+              <br />
+              <strong>Form Sys ID:</strong> {formData.layout.formSysId || 'None'}
+            </div>
+          )}
+          {listData && (
+            <div>
+              <strong>List Data:</strong> {listData.columns.length} columns, {listData.records.length} records
+              <br />
+              <strong>List Sys ID:</strong> {listData.listSysId || 'None'}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
