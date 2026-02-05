@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage'
 import StepperPage from './pages/StepperPage'
 import OOBDemoPage from './pages/OOBDemoPage'
 import DynamicFormPage from './pages/DynamicFormPage'
+import DynamicListPage from './pages/DynamicListPage'
 import './app.css'
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
                         <Route path="/stepper" element={<StepperPage tableName={tableName} />} />
                         <Route path="/oob-demo" element={<OOBDemoPage />} />
                         <Route path="/dynamic-form" element={<DynamicFormPage />} />
+                        <Route path="/dynamic-list" element={<DynamicListPage />} />
                     </Routes>
                 </main>
             </div>

@@ -34,6 +34,11 @@ export default function Navigation({ tableName }: NavigationProps) {
             icon: '📄',
         },
         {
+            label: 'Dynamic List',
+            path: '/dynamic-list',
+            icon: '📊',
+        },
+        {
             label: 'Stepper Workflow',
             path: '/stepper',
             icon: '📝',
@@ -41,10 +46,10 @@ export default function Navigation({ tableName }: NavigationProps) {
         {
             label: 'Dashboard',
             path: '/dashboard',
-            icon: '📊',
+            icon: '📈',
         },
         {
-            label: 'OOB Demo',
+            label: 'Live Demo (Script Include)',
             path: '/oob-demo',
             icon: '🔧',
         },
@@ -64,6 +69,7 @@ export default function Navigation({ tableName }: NavigationProps) {
                             key={button.path}
                             className={`nav-button ${isActive(button.path) ? 'active' : ''}`}
                             onClick={() => navigate(button.path)}
+                            title={button.label}
                         >
                             <span className="nav-icon">{button.icon}</span>
                             <span className="nav-label">{button.label}</span>
